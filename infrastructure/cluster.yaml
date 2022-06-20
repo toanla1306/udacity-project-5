@@ -31,11 +31,11 @@ Resources:
     Type: AWS::EKS::Cluster
     Properties:
       Name: Cluster-Application-1
-      RoleArn: !Ref ClusterRole
+      RoleArn: !GetAtt ClusterRole.Arn
       ResourcesVpcConfig:
         SubnetIds:
           - subnet-0ed29f98c05f7c4e1
-          - subnet-0ed29f98c05f7c4e1
+          - subnet-0d9a4faa28bfb6561
       Logging:
         ClusterLogging:
           EnabledTypes:

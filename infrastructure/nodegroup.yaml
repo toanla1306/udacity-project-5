@@ -10,6 +10,7 @@ Resources:
             Principal:
               Service: 
                 - ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
@@ -17,7 +18,7 @@ Resources:
   SecurityGroupId:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub UdaPeople-${ID}
+      GroupName: 'learning-eks'
       GroupDescription: Allow port 22 and port 3030.
       SecurityGroupIngress:
         - Description: "SSH access"
@@ -27,28 +28,27 @@ Resources:
           CidrIp: 0.0.0.0/0
 
   LauchTemplateId:
-    Type: AWS::EC2::LaunchTemplate
-    Properties:
-      LaunchTemplateData:
-        BlockDeviceMappings:
-          - DeviceName: /dev/xvda
-            Ebs:
-              DeleteOnTermination: true
-              VolumeSize: 10
-              VolumeType: gp2
-        ImageId: ami-09d56f8956ab235b3
-        InstanceType: t2.micro
-        KeyName: project-3-keypem
-        SecurityGroupIds:
-          - !Ref SecurityGroupId
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:        
+      # ToDo: AMI ID of Ubuntu Linux machine. Too get one, try creating a VM from the web console. 
+      ImageId: ami-0747bdcabd34c712a
+      # ToDo: Change the key-pair name, as applicable to you. 
+      KeyName: project-3-keypem
+      SecurityGroups:
+      - Ref: SecurityGroupId
+      InstanceType: t3.medium
+      BlockDeviceMappings:
+      - DeviceName: "/dev/sdk"
+        Ebs:
+          VolumeSize: '10'
 
   NodeGroupResource:
     Type: AWS::EKS::Nodegroup
     Properties:
       Subnets:
         - subnet-0ed29f98c05f7c4e1
-        - subnet-0ed29f98c05f7c4e1
-      NodeRole: !Ref NodeGroupRole
+        - subnet-0d9a4faa28bfb6561
+      NodeRole: !GetAtt NodeGroupRole.Arn
       ClusterName: Cluster-Application-1
       NodegroupName: Worker-Node-1
       RemoteAccess:
@@ -56,5 +56,14 @@ Resources:
         SourceSecurityGroups:
           - !Ref SecurityGroupId
       LaunchTemplate:
-        - Id: !Ref LauchTemplateId
-      
+        Id: !Ref LauchTemplateId
+      Taints:
+        - Effect: NO_SCHEDULE
+          Key: taintkey
+          Value: taintvalue
+      Labels: 
+        Key1: Value1
+      ScalingConfig:
+        MinSize: 2
+        DesiredSize: 3
+        MaxSize: 4

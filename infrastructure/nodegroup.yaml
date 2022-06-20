@@ -1,0 +1,60 @@
+
+Resources:
+  NodeGroupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - ec2.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub UdaPeople-${ID}
+      GroupDescription: Allow port 22 and port 3030.
+      SecurityGroupIngress:
+        - Description: "SSH access"
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  LauchTemplateId:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              DeleteOnTermination: true
+              VolumeSize: 10
+              VolumeType: gp2
+        ImageId: ami-09d56f8956ab235b3
+        InstanceType: t2.micro
+        KeyName: project-3-keypem
+        SecurityGroupIds:
+          - !Ref SecurityGroupId
+
+  NodeGroupResource:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      Subnets:
+        - subnet-0ed29f98c05f7c4e1
+        - subnet-0ed29f98c05f7c4e1
+      NodeRole: !Ref NodeGroupRole
+      ClusterName: Cluster-Application-1
+      NodegroupName: Worker-Node-1
+      RemoteAccess:
+        Ec2SshKey: project-3-keypem
+        SourceSecurityGroups:
+          - !Ref SecurityGroupId
+      LaunchTemplate:
+        - Id: !Ref LauchTemplateId
+      

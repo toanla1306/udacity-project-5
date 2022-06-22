@@ -27,20 +27,37 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
 
-  LauchTemplateId:
+  LauchTemplateId1:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:        
       # ToDo: AMI ID of Ubuntu Linux machine. Too get one, try creating a VM from the web console. 
-      ImageId: ami-0747bdcabd34c712a
+      ImageId: ami-09d56f8956ab235b3
       # ToDo: Change the key-pair name, as applicable to you. 
       KeyName: project-3-keypem
       SecurityGroups:
       - Ref: SecurityGroupId
-      InstanceType: t3.medium
+      InstanceType: t2.micro
       BlockDeviceMappings:
-      - DeviceName: "/dev/sdk"
+      - DeviceName: /dev/xvda
         Ebs:
           VolumeSize: '10'
+
+  LauchTemplateId2:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: EKSTemplateLaunch
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              DeleteOnTermination: true
+              VolumeSize: 10
+              VolumeType: gp2
+        ImageId: ami-09d56f8956ab235b3
+        InstanceType: t2.micro
+        KeyName: project-3-keypem
+        SecurityGroupIds:
+          - !GetAtt SecurityGroupId.GroupId
 
   NodeGroupResource:
     Type: AWS::EKS::Nodegroup
@@ -56,7 +73,8 @@ Resources:
         SourceSecurityGroups:
           - !Ref SecurityGroupId
       LaunchTemplate:
-        Id: !Ref LauchTemplateId
+        Name: EKSTemplateLaunch
+        Version: !GetAtt LauchTemplateId2.LatestVersionNumber
       Taints:
         - Effect: NO_SCHEDULE
           Key: taintkey

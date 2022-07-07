@@ -19,7 +19,6 @@ jobs:
       - aws-eks/create-cluster:
           cluster-name: cluster-project-5
           aws-region: us-east-1
-          zones: [us-east-1a, us-east-1b]
           # node-ami: ami-052efd3df9dad4825
           node-type: t2.micro
           nodes-min: 1

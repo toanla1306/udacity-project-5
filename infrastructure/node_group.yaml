@@ -1,0 +1,26 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: cluster-project-5
+  region: us-east-1
+
+managedNodeGroups:
+  - name: ng-1-workers
+    labels: { role: workers }
+    instanceType: t2.micro
+    desiredCapacity: 2
+    minSize: 1
+    maxSize: 2
+    volumeSize: 10
+    ssh:
+      publicKeyName: project-3-keypem
+  - name: ng-2-builders
+    labels: { role: builders }
+    instanceType: t2.micro
+    desiredCapacity: 2
+    minSize: 1
+    maxSize: 2
+    volumeSize: 10
+    ssh:
+      publicKeyName: project-3-keypem

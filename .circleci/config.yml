@@ -19,10 +19,16 @@ jobs:
       - aws-eks/create-cluster:
           cluster-name: cluster-project-5
           aws-region: us-east-1
-      - run:
-          name: create node group
-          command: |
-            eksctl create nodegroup --config-file=infrastructure/node_group.yaml
+          zones: us-east-1a
+          node-ami: ami-052efd3df9dad4825
+          node-type: t2.micro
+          nodes-min: 1
+          nodes-max: 2
+          ssh-public-key: project-3-keypem
+      # - run:
+      #     name: create node group
+      #     command: |
+      #       eksctl create nodegroup --config-file=infrastructure/node_group.yaml
 
   # test-cluster:
   #   docker:

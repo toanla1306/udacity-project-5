@@ -16,6 +16,33 @@ commands:
             aws configure set aws_session_token $AWS_SESSION_TOKEN
             aws configure set region $AWS_DEFAULT_REGION
 jobs:
+  linter-check-dockerfile:
+    docker:
+      - image: python:3.7.3-stretch
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys: 
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            - v1-dependencies-
+      - run:  
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            make install
+            wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64 &&\
+            chmod +x /bin/hadolint
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+      - run:
+          name: run lint 
+          command: |
+            . venv/bin/activate
+            make lint
   build-and-push-image-docker:
     docker:
       - image: 'cimg/python:3.10'
@@ -33,13 +60,6 @@ jobs:
             aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin "${DOMAIN_REPO_ECR}"
             docker tag project-5-learning-udacity:v1 "${REPOSITORY_ECR}":v1
             docker push "${REPOSITORY_ECR}":v1
-      # - aws-ecr/build-and-push-image:
-      #     aws-access-key-id: $AWS_ACCESS_KEY_ID
-      #     aws-secret-access-key: $AWS_SECRET_ACCESS_KEY
-      #     dockerfile: Dockerfile
-      #     region: us-east-2
-      #     repo: $REPOSITORY_ECR
-      #     tag: latest
   create-cluster:
     docker:
       - image: 'cimg/python:3.10'
@@ -51,44 +71,30 @@ jobs:
           aws-region: us-east-2
           # node-ami: ami-052efd3df9dad4825
           node-type: t2.micro
-          nodes-min: 1
-          nodes-max: 2
+          nodes-min: 2
+          nodes-max: 3
           ssh-public-key: project-3-keypem
-      # - run:
-      #     name: create node group
-      #     command: |
-      #       eksctl create nodegroup --config-file=infrastructure/node_group.yaml
-  # create-cluster:
-  #   docker: 
-  #     - image: 'cimg/python:3.10'
-  #   steps:
-  #     - checkout
-  #     - aws_cli_credentials
-  #     - aws-eks/update-kubeconfig-with-authenticator:
-  #         cluster-name: cluster-project-5
-  #         install-kubectl: true
-  #     - kubernetes/create-or-update-resource:
-  #         resource-file-path: tests/nginx-deployment/deployment.yaml
-  #         resource-name: deployment/nginx-deployment
-  # test-cluster:
-  #   docker:
-  #     - image: 'cimg/python:3.10'
-  #   parameters:
-  #     cluster-name:
-  #       description: |
-  #         Name of the EKS cluster
-  #       type: string
-  #   steps:
-  #     - kubernetes/install:
-  #         kubectl-version: v1.22.0
-  #     - aws-eks/update-kubeconfig-with-authenticator:
-  #         cluster-name: << parameters.cluster-name >>
-  #     - run:
-  #         command: |
-  #           kubectl get services
-  #         name: Test cluster
+  create-deployment:
+    docker: 
+      - image: 'cimg/python:3.10'
+    steps:
+      - checkout
+      - aws_cli_credentials
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: cluster-project-5
+          install-kubectl: true
+      - kubernetes/create-or-update-resource:
+          resource-file-path: infrastructure/deployment.yaml
+          show-kubectl-command: true
 workflows:
   deployment:
     jobs:
-      - build-and-push-image-docker
-      # - create-cluster
+      - linter-check-dockerfile
+      - build-and-push-image-docker:
+          requires:
+            - "linter-check-dockerfile"
+      - create-cluster:
+          requires:
+            - "linter-check-dockerfile"
+      - create-deployment:
+          requires: [build-and-push-image-docker, create-cluster]

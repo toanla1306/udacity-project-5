@@ -2,7 +2,7 @@ version: '2.1'
 orbs:
   aws-eks: circleci/aws-eks@2.2.0
   kubernetes: circleci/kubernetes@1.3
-  aws-ecr: circleci/aws-ecr@8.1.2
+  # aws-ecr: circleci/aws-ecr@8.1.2
 
 commands:
   aws_cli_credentials:
@@ -22,13 +22,20 @@ jobs:
     steps:
       - checkout
       - aws_cli_credentials
-      - aws-ecr/build-and-push-image:
-          aws-access-key-id: $AWS_ACCESS_KEY_ID
-          aws-secret-access-key: $AWS_SECRET_ACCESS_KEY
-          dockerfile: Dockerfile
-          region: us-east-2
-          repo: 504395544721.dkr.ecr.us-east-2.amazonaws.com/project-5-learning-udacity
-          tag: latest
+      - run:
+          name: run build docker and push to ecr
+          command: |
+            docker build . -t project-5-learning-udacity:v1
+            aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin "${DOMAIN_REPO_ECR}"
+            docker tag project-5-learning-udacity:v1 "${REPOSITORY_ECR}":v1
+            docker push "${REPOSITORY_ECR}":v1
+      # - aws-ecr/build-and-push-image:
+      #     aws-access-key-id: $AWS_ACCESS_KEY_ID
+      #     aws-secret-access-key: $AWS_SECRET_ACCESS_KEY
+      #     dockerfile: Dockerfile
+      #     region: us-east-2
+      #     repo: $REPOSITORY_ECR
+      #     tag: latest
   create-cluster:
     docker:
       - image: 'cimg/python:3.10'
@@ -79,5 +86,5 @@ jobs:
 workflows:
   deployment:
     jobs:
-      # - build-and-push-image-docker
+      - build-and-push-image-docker
       # - create-cluster

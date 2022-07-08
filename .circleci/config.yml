@@ -19,13 +19,13 @@ jobs:
   build-and-push-image-docker:
     docker:
       - image: 'cimg/python:3.10'
+        user: root
     steps:
       - checkout
       - aws_cli_credentials
       - run:
           name: run build docker and push to ecr
           command: |
-            sudo bash
             sudo chmod 666 /var/run/docker.sock
             docker build . -t project-5-learning-udacity:v1
             aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin "${DOMAIN_REPO_ECR}"

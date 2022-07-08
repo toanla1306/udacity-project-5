@@ -23,3 +23,17 @@ spec:
             containerPort: 5000
       # imagePullSecrets:
       #     - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-5-service
+spec:
+  selector:
+    app: project-5
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+      nodePort: 30000

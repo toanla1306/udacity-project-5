@@ -17,12 +17,9 @@ spec:
       containers:
       - name: project-5-udacity
         image: 504395544721.dkr.ecr.us-east-2.amazonaws.com/project-5-learning-udacity:v1
-        # imagePullPolicy: Always
         ports:
           - name: web
             containerPort: 5000
-      # imagePullSecrets:
-      #     - name: regcred
 ---
 apiVersion: v1
 kind: Service
@@ -31,26 +28,8 @@ metadata:
 spec:
   selector:
     app: project-5
+  type: LoadBalancer
   ports:
     - protocol: TCP
       port: 5000
-
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata: 
-  name: project-5-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-spec:
-  ingressClassName: project-5-ingress-class
-  rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: project-5-service
-                port:
-                  number: 5000
+      targetPort: 5000
